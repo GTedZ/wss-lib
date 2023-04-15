@@ -19,5 +19,8 @@
   "bugs": {
     "url": "https://github.com/GTedZ/wss-lib/issues"
   },
-  "homepage": "https://github.com/GTedZ/wss-lib#readme"
+  "homepage": "https://github.com/GTedZ/wss-lib#readme",
+  "dependencies": {
+    "ws": "^8.13.0"
+  }
 }
