@@ -14,9 +14,9 @@ class Server extends EventEmitter {
 
     timeout = 1000;
 
-    pingInterval = 3 * SECOND;
+    pingInterval = 3 * MINUTE;
 
-    pong_timeout_limit = 15 * SECOND;
+    pong_timeout_limit = 15 * MINUTE;
 
     app;
 
@@ -102,7 +102,7 @@ function handle_WS_server_listeners(serverInstance) {
 }
 
 function sendPing(serverInstance, socket) {
-    if (Date.now() - socket._lastPong > serverInstance.pong_timeout_limit) {
+    if (Date.now() - socket._lastPong >= serverInstance.pong_timeout_limit) {
         close(socket);
     } else if (socket._isalive) {
         socket.ping();
@@ -139,7 +139,6 @@ function handle_Server_listener(serverInstance) {
             const cb_listeners = [];
             cb_listeners.push(...serverInstance.listeners('server-upgrade'));
             cb_listeners.push(...serverInstance.listeners('authentication'));
-            console.log(cb_listeners)
 
             let isValid = true;
             for await (const cb_listener of cb_listeners) {
