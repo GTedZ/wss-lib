@@ -64,6 +64,9 @@ class Server extends EventEmitter {
 function handle_WS_server_listeners(serverInstance) {
     serverInstance.WS_server.on('connection', socket => {
 
+        serverInstance.emit('open', socket);
+        serverInstance.emit('connection', socket);
+
         socket._isalive = true;
         socket._lastPong = Date.now();
 
