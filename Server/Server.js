@@ -59,6 +59,10 @@ class Server extends EventEmitter {
         socket.send(msg);
     }
 
+    sockets() {
+        return this.WS_server.clients;
+    }
+
 }
 
 function handle_WS_server_listeners(serverInstance) {
@@ -153,8 +157,9 @@ function handle_Server_listener(serverInstance) {
                 return
             };
 
-            serverInstance.WS_server.handleUpgrade(request, socket, head, socket => {
-                serverInstance.WS_server.emit('connection', socket, request);
+            serverInstance.WS_server.handleUpgrade(request, socket, head, newSocket => {
+                socket.emit('accepted', newSocket);
+                serverInstance.WS_server.emit('connection', newSocket, request);
             });
 
         })
