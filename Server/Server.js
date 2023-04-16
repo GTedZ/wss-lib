@@ -3,10 +3,20 @@ const EventEmitter = require('events');
 const express = require('express');
 const ws = require('ws');
 
+const SECOND = 1000,
+    MINUTE = 60 * SECOND;
+;
+
 /**
  * @emits Server#event:listen
  */
 class Server extends EventEmitter {
+
+    timeout = 1000;
+
+    pingInterval = 3 * SECOND;
+
+    pong_timeout_limit = 15 * SECOND;
 
     app;
 
@@ -29,10 +39,84 @@ class Server extends EventEmitter {
 
     listen = express().listen;
 
+    broadcast(msg) {
+        if (typeof msg == 'object') msg = JSON.stringify(msg);
+
+        this.WS_server.clients.forEach((socket) => {
+            this.sendSocket(socket, msg);
+        });
+    }
+
+    sendSocket(socket, msg) {
+        if (!socket._isalive) {
+            close(socket);
+            return;
+        }
+        if (socket.readyState !== ws.OPEN) {
+            setTimeout(() => this.sendSocket(socket, msg), this.timeout);
+            return;
+        }
+        socket.send(msg);
+    }
+
 }
 
 function handle_WS_server_listeners(serverInstance) {
+    serverInstance.WS_server.on('connection', socket => {
 
+        socket._isalive = true;
+        socket._lastPong = Date.now();
+
+        socket._pingInterval = setInterval(() => sendPing(serverInstance, socket), serverInstance.pingInterval);
+
+        socket.on('message', (...args) => {
+            serverInstance.emit('message', socket, ...args);
+        });
+
+        socket.on('error', (...args) => {
+            socket._isalive = false;
+            serverInstance.emit('error', socket, ...args);
+            close(socket);
+        });
+
+        socket.on('close', (...args) => {
+            socket._isalive = false;
+            serverInstance.emit('close', socket, ...args);
+
+            close(socket);
+        });
+
+        socket.on('ping', (...args) => {
+            serverInstance.emit('ping', ...args);
+        });
+
+        socket.on('pong', (...args) => {
+            socket._lastPong = Date.now();
+            serverInstance.emit('pong', ...args);
+        })
+
+    })
+}
+
+function sendPing(serverInstance, socket) {
+    if (Date.now() - socket._lastPong > serverInstance.pong_timeout_limit) {
+        close(socket);
+    } else if (socket._isalive) {
+        socket.ping();
+    } else {
+        close(socket);
+    }
+}
+
+function close(socket) {
+    clearInterval(socket._pingInterval);
+
+    try {
+        socket.terminate();
+        socket.destroy();
+    } catch (err) {
+
+    }
 }
 
 function handle_Server_listener(serverInstance) {
@@ -49,7 +133,10 @@ function handle_Server_listener(serverInstance) {
 
         server.on('upgrade', async (request, socket, head) => {
 
-            const cb_listeners = server.listeners('server-upgrade');
+            const cb_listeners = [];
+            cb_listeners.push(...serverInstance.listeners('server-upgrade'));
+            cb_listeners.push(...serverInstance.listeners('authentication'));
+            console.log(cb_listeners)
 
             let isValid = true;
             for await (const cb_listener of cb_listeners) {
@@ -59,7 +146,10 @@ function handle_Server_listener(serverInstance) {
                     break;
                 }
             }
-            if (!isValid) return;
+            if (!isValid) {
+                socket.destroy();
+                return
+            };
 
             serverInstance.WS_server.handleUpgrade(request, socket, head, socket => {
                 serverInstance.WS_server.emit('connection', socket, request);
@@ -74,28 +164,3 @@ function handle_Server_listener(serverInstance) {
 }
 
 module.exports = Server;
-
-
-// wsServer = new ws.Server({ noServer: true });
-// wsServer.on('connection', socket => {
-//     socket.firstMessage = true;
-//     socket.username = undefined;
-//     socket.on('message', message => {
-//         let data = JSON.parse(message.toString());
-//         if (socket.firstMessage) checkUser(data, socket);
-//         socket.firstMessage = false;
-//     });
-
-//     socket.on('close', () => {
-//         if (socket.username != undefined) {
-//         }
-//     })
-// });
-
-// const server = app.listen(443, () => { console.log('Server is on!') });
-
-// server.on('upgrade', (request, socket, head) => {
-//     wsServer.handleUpgrade(request, socket, head, socket => {
-//         wsServer.emit('connection', socket, request);
-//     });
-// });
