@@ -15,7 +15,7 @@ class Client extends EventEmitter {
 
     alive = true;
 
-    timeout = 1000;
+    timeout = 500;
 
     pingInterval_time = 3 * MINUTE;
 
@@ -70,8 +70,9 @@ class Client extends EventEmitter {
             if (this.listenerCount('error') != 0) this.emit('error', ...args);
         });
 
-        this.socket.on('close', (...args) => {
+        this.socket.on('close', async (...args) => {
             if (!this.alive) return;
+            await delay(this.timeout);
             this.newSocket();
             this.emit('close', ...args);
         });
