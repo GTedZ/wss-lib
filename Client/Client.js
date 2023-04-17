@@ -67,7 +67,7 @@ class Client extends EventEmitter {
         this.socket.on('error', (...args) => {
             if (!this.alive) return;
 
-            if (this.listenerCount('error') != 0) this.emit('error', ...args);
+            if (this.listenerCount('error') != 0) this.emit('error', ...args);  // needed to check the listenerCount or else an actual unhandled `new Error` exception will be thrown.
         });
 
         this.socket.on('close', async (...args) => {
