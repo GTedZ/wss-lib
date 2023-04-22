@@ -82,7 +82,7 @@ function handle_WS_server_listeners(serverInstance) {
 
         socket.on('error', (...args) => {
             socket._isalive = false;
-            serverInstance.emit('error', socket, ...args);
+            if (serverInstance.listenerCount('error') != 0) serverInstance.emit('error', socket, ...args);  // needed to check the listenerCount or else an actual unhandled `new Error` exception will be thrown.
             close(socket);
         });
 
