@@ -37,6 +37,18 @@ class Server extends EventEmitter {
 
     }
 
+    getPathName(request) {
+        const customURL = `ws://ignore${request.url}`;
+        const _URL = new URL(customURL);
+        return _URL.pathname;
+    }
+
+    getSearchParams(request) {
+        const customURL = `ws://ignore${request.url}`;
+        const _URL = new URL(customURL);
+        return _URL.searchParams;
+    }
+
     listen = express().listen;
 
     broadcast(msg) {
