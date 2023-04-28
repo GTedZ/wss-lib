@@ -51,11 +51,11 @@ class Client extends EventEmitter {
         if (isObject(this.params) && Object.keys(this.params).length > 0) {
             path += '?';
 
-            for (const [key, value] of Object.entries(this.params)) {
-                path += key + '=' + value;
-            }
-
+            const params = [];
+            for (const [key, value] of Object.entries(this.params)) params.push(key + '=' + value);
+            path += params.join('&');
         }
+
         path = encodeURI(path);
         this.socket = new ws.WebSocket(path);
 
