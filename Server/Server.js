@@ -77,6 +77,9 @@ class Server extends EventEmitter {
 
 }
 
+/**
+ * @param {Server} serverInstance 
+ */
 function handle_WS_server_listeners(serverInstance) {
     serverInstance.WS_server.on('connection', socket => {
 
@@ -88,8 +91,26 @@ function handle_WS_server_listeners(serverInstance) {
 
         socket._pingInterval = setInterval(() => sendPing(serverInstance, socket), serverInstance.pingInterval);
 
-        socket.on('message', (...args) => {
-            serverInstance.emit('message', socket, ...args);
+        socket.on('message', async (message) => {
+            message = message.toString();
+
+            try {
+                const { ws_message_id, ws_message } = JSON.parse(message);
+                if (!ws_message_id || !ws_message) throw '';
+
+                const listeners = serverInstance.listeners('privateMessage');
+                for (const listener of listeners) {
+                    const response = await listener(socket, ws_message, ws_message_id);
+                    socket.send(JSON.stringify(
+                        {
+                            ws_message_id,
+                            ws_message: response
+                        }
+                    ))
+                }
+            } catch (err) {
+                serverInstance.emit('message', socket, message);
+            }
         });
 
         socket.on('error', (...args) => {

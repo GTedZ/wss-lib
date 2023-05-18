@@ -17,6 +17,7 @@ server.on('authentication', (request, tempSocket) => {
     tempSocket.once('accepted', newSocket => {
         newSocket.username = username;
         newSocket.password = password;
+        setInterval(() => newSocket.send('hello'), 1000)
     })
 
 
@@ -27,4 +28,9 @@ server.on('message', (socket, msg) => {
     const data = msg.toString();
 
     console.log(socket.username, socket.password, 'got a message from those creds:', data);
+})
+
+server.on('privateMessage', (socket, msg, msg_id) => {
+    // handle message
+    return 'OK';
 })

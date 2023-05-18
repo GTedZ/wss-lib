@@ -17,10 +17,16 @@ class Client extends EventEmitter {
 
     timeout = 500;
 
+
     pingInterval_time = 3 * MINUTE;
 
     pong_timeout_limit = 15 * MINUTE;
 
+    privateMessage_timeout = 10 * SECOND;
+
+    /**
+     * @type {ws.WebSocket}
+     */
     socket;
 
     path;
@@ -77,9 +83,22 @@ class Client extends EventEmitter {
             this.emit('close', ...args);
         });
 
-        this.socket.on('message', (...args) => {
+        this.socket.on('message', (message) => {
             if (!this.alive) return;
-            this.emit('message', ...args);
+            message = message.toString();
+
+            if (this.listenerCount('privateMessage') === 0) {
+                return this.emit('message', message);
+            }
+
+            try {
+                const { ws_message_id, ws_message } = JSON.parse(message);
+                if (!ws_message_id || !ws_message) throw '';
+                this.emit('privateMessage', ws_message_id, ws_message);
+            } catch (err) {
+                this.emit('message', message);
+            }
+
         });
 
         this.socket.on('ping', (...args) => {
@@ -120,10 +139,38 @@ class Client extends EventEmitter {
             return this.send(msg);
         }
 
-        if (typeof msg == 'object') msg = JSON.stringify(msg);
+        if (typeof msg === 'object') msg = JSON.stringify(msg);
 
         await this.socket.send(msg);
     }
+
+    async sendPrivateMessage(msg) {
+        if (typeof msg === 'object') msg = JSON.stringify(msg);
+
+        return new Promise(
+            async (resolve, reject) => {
+                const ID = Math.random() * 1000000000
+
+                let callback = (ws_message_id, ws_message) => {
+                    if (ws_message_id !== ID) return;
+                    this.off('privateMessage', callback);
+                    resolve(ws_message);
+                }
+                this.on('privateMessage', callback);
+                setTimeout(() => {
+                    this.off('privateMessage', callback);
+                    reject(`No response within ${this.privateMessage_timeout / 1000} seconds received`);
+                }, this.privateMessage_timeout);
+
+                this.send({
+                    ws_message_id: ID,
+                    ws_message: msg
+                })
+
+            }
+        );
+    }
+
 
 }
 
