@@ -1,6 +1,6 @@
 {
   "name": "wss-lib",
-  "version": "0.0.4",
+  "version": "0.0.5",
   "description": "The main priority is just to maintain a stable WS connection (which means it reconnects if the connection is lost), this is in no way shape or form intended for professional use, this is created just for the sake of not having to rewrite or handle the disconnections and having to reconnect to the server.",
   "main": "main.js",
   "scripts": {
