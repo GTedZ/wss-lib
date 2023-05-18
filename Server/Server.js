@@ -99,15 +99,15 @@ function handle_WS_server_listeners(serverInstance) {
                 if (!ws_message_id || !ws_message) throw '';
 
                 const listeners = serverInstance.listeners('privateMessage');
-                for (const listener of listeners) {
+                listeners.forEach(async (listener) => {
                     const response = await listener(socket, ws_message, ws_message_id);
                     socket.send(JSON.stringify(
                         {
                             ws_message_id,
                             ws_message: response
                         }
-                    ))
-                }
+                    ));
+                });
             } catch (err) {
                 serverInstance.emit('message', socket, message);
             }
