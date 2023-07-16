@@ -25,9 +25,9 @@ class Client extends EventEmitter {
     privateMessage_timeout = 10 * SECOND;
 
     /**
-     * @type {ws.WebSocket}
+     * @type {ws.WebSocket | null}
      */
-    socket;
+    socket = null;
 
     path;
 
@@ -53,6 +53,8 @@ class Client extends EventEmitter {
     }
 
     newSocket() {
+        if (this.socket !== null) this.socket.close();
+
         let path = this.path;
         if (isObject(this.params) && Object.keys(this.params).length > 0) {
             path += '?';
